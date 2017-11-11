@@ -19,7 +19,6 @@ def connect(username: str, password) -> paramiko.SSHClient:
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy)
         client.connect(host, port=port, username=username, password=password)
-        print(type(client))
         return client
     except Exception as e:
         print("Fail to Connect")
@@ -41,23 +40,26 @@ def exec_wo_stdin(command: str, conn: paramiko.SSHClient) -> List[str]:
         return msg
 
 
-def sftp(path: str, conn: paramiko.SSHClient, outpath: str = "/printFolder/files"):
+def sftp(path: str, conn: paramiko.SSHClient, outpath: str = "printFolder/files/"):
     # TODO: check path
     sftp_conn: paramiko.SFTPClient = conn.open_sftp()
-    try:
-        sftp_conn.chdir(outpath)  # Test if remote_path exists
-    except IOError:
-        sftp_conn.mkdir(outpath)  # Create remote_path
-        sftp_conn.chdir(outpath)
-    sftp_conn.put(path, '.')  # At this point, you are in remote_path in either case
+    filename = os.path.basename(path)
+    mkdir_p(sftp_conn, outpath)
+    print(os.path.join(sftp_conn.getcwd(), filename))
+    sftp_conn.put(path, filename)  # At this point, you are in remote_path in either case
     remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
-    return remote_dir + os.path.basename(path)
+    return os.path.join(remote_dir, filename)
 
 
-def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "/printFolder/ps/") -> str:
-    command = papel_command + " " + path + " " + out_path + os.path.basename(path)[:-4]  # without .pdf
-    conn.exec_command(command)
+def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/") -> str:
+    command = pdf2ps_command + " " + path + " " + out_path + os.path.basename(path)[:-4]+".ps"  # without .pdf
+    print(command)
+    sftp_conn: paramiko.SFTPClient = conn.open_sftp()
+    mkdir_p(sftp_conn, out_path)
+    sftp_conn.close()
+    stdin, stdout, stderr = conn.exec_command(command)
+    print(stdout.readlines(), stderr.readlines())
     return out_path + os.path.basename(path)
 
 
@@ -65,5 +67,21 @@ def printing(path: str, conn: paramiko.SSHClient, **kwargs):
     # TODO: check if exists printer and if is valid
     command = duplex_command + " " + path + " | lpr -P " + kwargs['printer']
     conn.exec_command(command)
+
+
+def mkdir_p(sftp_conn, remote_directory):
+    if remote_directory == '/':
+        print('root')
+        sys.exit(-1)
+    if remote_directory == '':
+        return
+    try:
+        sftp_conn.chdir(remote_directory)  # sub-directory exists
+    except IOError:
+        dirname, basename = os.path.split(remote_directory.rstrip('/'))
+        mkdir_p(sftp_conn, dirname)  # make parent directories
+        sftp_conn.mkdir(basename)  # sub-directory missing, so created it
+        sftp_conn.chdir(basename)
+        return True
 
 # TODO: test sftp, pdf2ps and printing
