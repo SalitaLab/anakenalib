@@ -1,5 +1,7 @@
 import sys
 
+import paramiko
+
 import anakenalib
 import getpass
 
@@ -12,8 +14,14 @@ if __name__ == '__main__':
     file_path = args[0]
     user = input("Username:")
     password = getpass.getpass("Password:")
-    conn = anakenalib.connect(user, password)
-    stdin, stdout, stderr = conn.exec_command(anakenalib.papel_command)
-    name = anakenalib.sftp(file_path, conn)
-    print(name)
-    anakenalib.pdf2ps(name, conn)
+    conn = None
+    try:
+        conn = anakenalib.connect(user, password)
+        stdin, stdout, stderr = conn.exec_command(anakenalib.papel_command)
+        name = anakenalib.sftp(file_path, conn)
+        print(name)
+        anakenalib.pdf2ps(name, conn)
+    except Exception as e:
+        print(e)
+        if conn is paramiko.SSHClient:
+            conn.close()

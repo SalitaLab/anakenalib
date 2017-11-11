@@ -22,8 +22,7 @@ def connect(username: str, password) -> paramiko.SSHClient:
         return client
     except Exception as e:
         print("Fail to Connect")
-        print(e)
-        sys.exit(1)
+        raise e
 
 
 def exec_wo_stdin(command: str, conn: paramiko.SSHClient) -> List[str]:
@@ -44,22 +43,26 @@ def sftp(path: str, conn: paramiko.SSHClient, outpath: str = "printFolder/files/
     # TODO: check path
     sftp_conn: paramiko.SFTPClient = conn.open_sftp()
     filename = os.path.basename(path)
-    mkdir_p(sftp_conn, outpath)
-    print(os.path.join(sftp_conn.getcwd(), filename))
-    sftp_conn.put(path, filename)  # At this point, you are in remote_path in either case
+    mkdir_p(sftp_conn, outpath)  # create path if not exists
+    sftp_conn.put(path, filename)  # write
     remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
     return os.path.join(remote_dir, filename)
 
 
 def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/") -> str:
-    command = pdf2ps_command + " " + path + " " + out_path + os.path.basename(path)[:-4]+".ps"  # without .pdf
-    print(command)
+    if not os.path.basename(path).endswith(".pdf"):
+        print("Not pdf file")
+        raise NotPdfFile()
+    command = pdf2ps_command + " " + path + " " + out_path + os.path.basename(path)[:-4] + ".ps"  # without .pdf
     sftp_conn: paramiko.SFTPClient = conn.open_sftp()
-    mkdir_p(sftp_conn, out_path)
+    mkdir_p(sftp_conn, out_path)  # create directories if doesn't exists
     sftp_conn.close()
     stdin, stdout, stderr = conn.exec_command(command)
-    print(stdout.readlines(), stderr.readlines())
+    err = stderr.readlines()
+    if len(err) > 0:
+        print("Error with pdf2ps")
+        raise Pdf2FileException()
     return out_path + os.path.basename(path)
 
 
@@ -84,4 +87,11 @@ def mkdir_p(sftp_conn, remote_directory):
         sftp_conn.chdir(basename)
         return True
 
-# TODO: test sftp, pdf2ps and printing
+
+# TODO: test printing
+class NotPdfFile(Exception):
+    pass
+
+
+class Pdf2FileException(Exception):
+    pass
