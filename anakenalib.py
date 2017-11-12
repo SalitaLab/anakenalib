@@ -40,13 +40,16 @@ def exec_wo_stdin(command: str, conn: paramiko.SSHClient) -> List[str]:
 
 
 def sftp(path: str, conn: paramiko.SSHClient, outpath: str = "printFolder/files/"):
-    # TODO: check path
+    # WARNING : if file exists override
+    if not os.path.isfile(path):
+        raise NotFileException()
     sftp_conn: paramiko.SFTPClient = conn.open_sftp()
     filename = os.path.basename(path)
     mkdir_p(sftp_conn, outpath)  # create path if not exists
     sftp_conn.put(path, filename)  # write
     remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
+    print(os.path.join(remote_dir, filename))
     return os.path.join(remote_dir, filename)
 
 
@@ -54,22 +57,40 @@ def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/
     if not os.path.basename(path).endswith(".pdf"):
         print("Not pdf file")
         raise NotPdfFile()
-    command = pdf2ps_command + " " + path + " " + out_path + os.path.basename(path)[:-4] + ".ps"  # without .pdf
+
     sftp_conn: paramiko.SFTPClient = conn.open_sftp()
+    filename = os.path.basename(path)[:-4] + ".ps"
     mkdir_p(sftp_conn, out_path)  # create directories if doesn't exists
+    remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
+
+    command = pdf2ps_command + " " + path + " " + os.path.join(remote_dir, filename)
+    print(command)
     stdin, stdout, stderr = conn.exec_command(command)
     err = stderr.readlines()
     if len(err) > 0:
         print("Error with pdf2ps")
-        raise Pdf2FileException()
-    return out_path + os.path.basename(path)
+        raise Pdf2FileException(err)
+    return os.path.join(remote_dir, filename)
 
 
 def printing(path: str, conn: paramiko.SSHClient, **kwargs):
-    # TODO: check if exists printer and if is valid
-    command = duplex_command + " " + path + " | lpr -P " + kwargs['printer']
-    conn.exec_command(command)
+    if not ('printer' in kwargs and 'landscape' in kwargs):
+        raise InvalidNumberArguments()
+
+    sftp_conn = conn.open_sftp()
+    try:
+        sftp_conn.stat(path) # check if exists
+    except IOError:
+        raise FileNotFoundError(path)
+    lpr_command = "lpr " + "-P " + kwargs['printer']
+    duplex = duplex_command + " " + kwargs['landscape']
+    if kwargs['landscape'] == "-l":
+        duplex += " "
+    duplex += path
+    command = duplex + " | " + lpr_command
+    print(command)
+    # conn.exec_command(command) TODO: prove in production
 
 
 def mkdir_p(sftp_conn, remote_directory):
@@ -94,4 +115,12 @@ class NotPdfFile(Exception):
 
 
 class Pdf2FileException(Exception):
+    pass
+
+
+class NotFileException(Exception):
+    pass
+
+
+class InvalidNumberArguments(Exception):
     pass
