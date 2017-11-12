@@ -98,7 +98,7 @@ def printing(path: str, conn: paramiko.SSHClient, **kwargs):
     duplex += path
     command = duplex + " | " + lpr_command
     print(command)
-    # conn.exec_command(command) TODO: prove in production
+    # conn.exec_command(command) TODO: test on production
 
 
 def mkdir_p(sftp_conn, remote_directory):
