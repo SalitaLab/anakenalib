@@ -1,5 +1,3 @@
-import sys
-
 import paramiko
 
 import anakenalib
@@ -7,7 +5,6 @@ import getpass
 import argparse
 
 if __name__ == '__main__':
-    usage = "usage: %prog file [options] "
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str, help="path del archivo a imprimir")
     parser.add_argument("-P",

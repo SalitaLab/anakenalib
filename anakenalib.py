@@ -75,12 +75,20 @@ def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/
 
 
 def printing(path: str, conn: paramiko.SSHClient, **kwargs):
+    """
+    :param path: remote path of ps file to print
+    :param conn: SSH connection
+    :param kwargs: {'printer': 'hp' or 'hp-335', 'landscape': -l or ""}
+    :return: None
+    """
+    if not os.path.basename(path).endswith(".ps"):
+        print("Not ps file")
+        raise NotPsFile()
     if not ('printer' in kwargs and 'landscape' in kwargs):
         raise InvalidNumberArguments()
-
     sftp_conn = conn.open_sftp()
     try:
-        sftp_conn.stat(path) # check if exists
+        sftp_conn.stat(path)  # check if exists
     except IOError:
         raise FileNotFoundError(path)
     lpr_command = "lpr " + "-P " + kwargs['printer']
@@ -123,4 +131,8 @@ class NotFileException(Exception):
 
 
 class InvalidNumberArguments(Exception):
+    pass
+
+
+class NotPsFile(Exception):
     pass
