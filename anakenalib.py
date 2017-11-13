@@ -92,13 +92,13 @@ def printing(path: str, conn: paramiko.SSHClient, **kwargs):
     except IOError:
         raise FileNotFoundError(path)
     lpr_command = "lpr " + "-P " + kwargs['printer']
-    duplex = duplex_command + " " + kwargs['landscape']
-    if kwargs['landscape'] == "-l":
-        duplex += " "
+    duplex = duplex_command + " "
+    if kwargs['landscape']:
+        duplex += "-1 < "  # TODO: fix landscape
     duplex += path
     command = duplex + " | " + lpr_command
     print(command)
-    # conn.exec_command(command) TODO: test on production
+    conn.exec_command(command)
 
 
 def mkdir_p(sftp_conn, remote_directory):

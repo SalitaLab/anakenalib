@@ -22,9 +22,10 @@ if __name__ == '__main__':
     try:
         conn = anakenalib.connect(user, password)
         stdin, stdout, stderr = conn.exec_command(anakenalib.papel_command)
+        print(stdout.readlines())
         remote_path = anakenalib.sftp(args.file, conn)
         ps_file = anakenalib.pdf2ps(remote_path, conn)
-        anakenalib.printing(ps_file, conn, printer=args.printer, landscape="-l" if args.landscape else "")
+        anakenalib.printing(ps_file, conn, printer=args.printer, landscape=args.landscape)
     except Exception as e:
         print(e)
         if conn is paramiko.SSHClient:
