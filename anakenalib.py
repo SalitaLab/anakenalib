@@ -49,8 +49,8 @@ def sftp(path: str, conn: paramiko.SSHClient, outpath: str = "printFolder/files/
     sftp_conn.put(path, filename)  # write
     remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
-    print(remote_dir + "/" filename)
-    return remote_dir + "/" + filename # TODO: check
+    print(remote_dir + "/" + filename)
+    return remote_dir + "/" + filename  # TODO: check
 
 
 def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/") -> str:
@@ -64,14 +64,14 @@ def pdf2ps(path: str, conn: paramiko.SSHClient, out_path: str = "printFolder/ps/
     remote_dir = sftp_conn.getcwd()
     sftp_conn.close()
 
-    command = pdf2ps_command + " " + path + " " + remote_dir + "/" filename
+    command = pdf2ps_command + " " + path + " " + remote_dir + "/" + filename
     print(command)
     stdin, stdout, stderr = conn.exec_command(command)
     err = stderr.readlines()
     if len(err) > 0:
         print("Error with pdf2ps")
         raise Pdf2FileException(err)
-    return remote_dir + "/" filename
+    return remote_dir + "/" + filename
 
 
 def printing(path: str, conn: paramiko.SSHClient, **kwargs):
