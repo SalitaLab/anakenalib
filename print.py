@@ -18,15 +18,16 @@ if __name__ == '__main__':
 
     user = input("Username:")
     password = getpass.getpass("Password:")
-    conn = None
+    anakena = None
     try:
-        conn = anakenalib.connect(user, password)
-        stdin, stdout, stderr = conn.exec_command(anakenalib.papel_command)
+        anakena = anakenalib.Anakena()
+        anakena.connect(user, password)
+        stdin, stdout, stderr = anakena.client.exec_command(anakenalib.papel_command)
         print(stdout.readlines())
-        remote_path = anakenalib.sftp(args.file, conn)
-        ps_file = anakenalib.pdf2ps(remote_path, conn)
-        anakenalib.printing(ps_file, conn, printer=args.printer, landscape=args.landscape)
+        remote_path = anakena.sftp(args.file)
+        ps_file = anakena.pdf2ps(remote_path)
+        anakena.printing(ps_file, printer=args.printer, landscape=args.landscape)
     except Exception as e:
         print(e)
-        if conn is paramiko.SSHClient:
-            conn.close()
+        if anakena.client is paramiko.SSHClient:
+            anakena.client.close()
