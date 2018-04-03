@@ -61,9 +61,11 @@ class Anakena:
         :return: server path to uploaded file
         """
         if not os.path.isfile(path):
+            print("File not found")
             raise NotFileException()
         sftp_conn: paramiko.SFTPClient = self.client.open_sftp()
         filename = os.path.basename(path)
+        print(filename)
         mkdir_p(sftp_conn, outpath)  # create path if not exists
         sftp_conn.put(path, filename)  # write
         remote_dir = sftp_conn.getcwd()
@@ -78,6 +80,7 @@ class Anakena:
         :param out_path: path where would it be new ps file
         :return: path to ps file
         """
+        print(os.path.basename(path))
         if not os.path.basename(path).endswith(".pdf"):
             print("Not pdf file")
             raise NotPdfFile()
@@ -88,7 +91,7 @@ class Anakena:
         remote_dir = sftp_conn.getcwd()
         sftp_conn.close()
 
-        command = pdf2ps_command + " " + path + " " + remote_dir + "/" + filename
+        command = pdf2ps_command + ' \'' + path + '\' ' + remote_dir + "/\'" + filename + "\'"
         print(command)
         stdin, stdout, stderr = self.client.exec_command(command)
         err = stderr.readlines()
@@ -116,8 +119,8 @@ class Anakena:
         lpr_command = "lpr " + "-P " + kwargs['printer']
         duplex = duplex_command + " "
         if kwargs['landscape']:
-            duplex += "-1 < "  # TODO: fix landscape
-        duplex += path
+            duplex += "-l "
+        duplex += '\'' + path + '\''
         command = duplex + " | " + lpr_command
         print(command)
         self.client.exec_command(command)  # TODO: test printing after refactoring
