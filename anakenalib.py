@@ -123,7 +123,7 @@ class Anakena:
         duplex += '\'' + path + '\''
         command = duplex + " | " + lpr_command
         print(command)
-        self.client.exec_command(command)  # TODO: test printing after refactoring
+        self.client.exec_command(command)  # TODO: more testing
 
 
 def mkdir_p(sftp_conn, remote_directory):
